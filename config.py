@@ -24,3 +24,5 @@ LOG_FILE = os.getenv("LOG_FILE", "logs/payment_gateway.log")
 
 # Saweria API
 SAWERIA_BASE_URL = "https://backend.saweria.co"
+USERNAME_SAWERIA = os.getenv("USERNAME_SAWERIA", "")
+DONATION_ID = os.getenv("DONATION_ID", "")

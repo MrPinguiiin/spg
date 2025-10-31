@@ -142,7 +142,7 @@ async def calculate_fee(request: Request):
         request_data = await request.json()
         logger.info("Calculate fee request received")
 
-        url = f"{SAWERIA_BASE_URL}/donations/MrPinguiiin/calculate_pg_amount"
+        url = f"{SAWERIA_BASE_URL}/donations/{USERNAME_SAWERIA}/calculate_pg_amount"
 
         # Prepare headers
         headers = {
@@ -170,7 +170,7 @@ async def calculate_fee(request: Request):
 @limiter.limit(RATE_LIMIT_QRIS_GENERATOR)
 async def qris_generator(
     qris_data: QRISRequest,
-    donation_id: str = "f4cc51b0-dd73-4631-ac04-b3f352196871",
+    donation_id: str = "",
     request: Request = None
 ):
     """Generate QRIS payment by proxying to Saweria API.
@@ -202,7 +202,9 @@ async def qris_generator(
             "vote": ""
         }
 
-        url = f"{SAWERIA_BASE_URL}/donations/snap/{donation_id}"
+        # Use environment variable if donation_id is not provided
+        final_donation_id = donation_id if donation_id else DONATION_ID
+        url = f"{SAWERIA_BASE_URL}/donations/snap/{final_donation_id}"
 
         # Prepare headers
         headers = {
