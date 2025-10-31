@@ -113,7 +113,14 @@ services:
       - "traefik.http.routers.saweria-main.middlewares=main-chain@docker"
       - "traefik.http.routers.saweria-main.service=saweria-service"
 
-      # Router HTTP umum untuk redirect ke HTTPS (hindari ganggu ACME HTTP-01)
+      # Router HTTP sementara untuk testing (tanpa redirect, jika SSL belum ready)
+      - "traefik.http.routers.saweria-http.rule=Host(`${DOMAIN}`) && !PathPrefix(`/.well-known/acme-challenge/`)"
+      - "traefik.http.routers.saweria-http.entrypoints=web"
+      - "traefik.http.routers.saweria-http.middlewares=main-chain@docker"
+      - "traefik.http.routers.saweria-http.service=saweria-service"
+      - "traefik.http.routers.saweria-http.priority=100"
+      
+      # Router HTTP untuk redirect ke HTTPS (prioritas lebih rendah, aktif jika SSL ready)
       - "traefik.http.routers.http-redirect.rule=Host(`${DOMAIN}`) && !PathPrefix(`/.well-known/acme-challenge/`)"
       - "traefik.http.routers.http-redirect.entrypoints=web"
       - "traefik.http.routers.http-redirect.middlewares=redirect-to-https@docker"
