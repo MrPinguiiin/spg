@@ -196,7 +196,7 @@ async def qris_generator(
             "email": qris_data.email,
             "first_name": qris_data.first_name,
             "phone": "",
-            "message": "Uji Coba Snap API",
+            "message": "Pembayaran Saweria",
             "notUnderage": True,
             "payment_type": "qris",
             "vote": ""
