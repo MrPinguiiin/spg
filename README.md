@@ -175,11 +175,50 @@ Logs are written to `logs/payment_gateway.log` with:
 - Error messages
 - Automatic log rotation (10MB, 1 week retention)
 
+## Deployment
+
+### Render Deployment
+
+1. **Push code ke Git repository** (GitHub/GitLab)
+
+2. **Connect to Render**:
+   - Buat Web Service baru di Render
+   - Connect ke repository Git Anda
+   - Pilih **Python** sebagai runtime
+
+3. **Konfigurasi Build & Start**:
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+
+4. **Environment Variables** (optional, untuk customization):
+   ```
+   DEBUG=false
+   LOG_LEVEL=INFO
+   RATE_LIMIT_CALCULATE_FEE=30/minute
+   RATE_LIMIT_QRIS_GENERATOR=20/minute
+   RATE_LIMIT_PAYMENT_STATUS=50/minute
+   ```
+
+5. **Deploy**: Klik **Create Web Service**
+
+### Manual Deployment
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run locally
+uvicorn main:app --host 0.0.0.0 --port 8000
+
+# Or using Python
+python main.py
+```
+
 ## Docker Support (Optional)
 
 Create a `Dockerfile`:
 ```dockerfile
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
