@@ -63,6 +63,9 @@ docker-compose.override.yml
 traefik/dynamic/*
 !traefik/dynamic/.gitkeep
 
+# Traefik auth (optional: bisa di-commit karena sudah hash, tapi lebih aman tidak commit)
+traefik/auth/.htpasswd
+
 # SSL certificates (if using certbot separately)
 *.pem
 *.key

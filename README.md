@@ -341,6 +341,19 @@ docker inspect saweria-gateway-app
 6. **Rust/Cargo Errors**: Update to latest package versions (already fixed in requirements.txt)
 7. **Permission Errors**: Run with proper user permissions, avoid system directories
 
+
+# 1. Generate password baru
+./generate-traefik-password.sh
+
+# 2. Copy output ke .env (tanpa quotes)
+# TRAEFIK_AUTH_USERS=admin:$$apr1$$...
+
+# 3. Generate .htpasswd file
+./generate-htpasswd.sh
+
+# 4. Restart Traefik
+docker-compose restart traefik
+
 ## License
 
 This project is provided as-is for educational and development purposes.
