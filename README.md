@@ -177,7 +177,24 @@ Logs are written to `logs/payment_gateway.log` with:
 
 ## Deployment
 
-### Render Deployment
+### 🚀 **Rekomendasi Platform Gratis Terbaik:**
+
+#### **1. Render (Recommended)**
+**Free Tier:** 750 jam/bulan, sleep setelah 15 menit tidak aktif
+**Keuntungan:** Mudah setup, Python native, persistent apps
+**Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
+
+#### **2. Railway**
+**Free Tier:** $5 credit/bulan, auto-recharge
+**Keuntungan:** Sangat mudah, Git integration, databases free
+**Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
+
+#### **3. Fly.io**
+**Free Tier:** 3 VMs kecil (256MB RAM), 160GB outbound/bulan
+**Keuntungan:** Global CDN, custom domains free, persistent
+**Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
+
+### Render Deployment (Detail)
 
 1. **Push code ke Git repository** (GitHub/GitLab)
 
@@ -200,6 +217,21 @@ Logs are written to `logs/payment_gateway.log` with:
    ```
 
 5. **Deploy**: Klik **Create Web Service**
+
+### Railway Deployment (Alternatif)
+
+1. **Push ke GitHub**
+2. **Connect ke Railway**: railway.app/new
+3. **Auto-detect Python**: Railway akan auto-detect dan setup
+4. **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+5. **Deploy otomatis** setiap push
+
+### Fly.io Deployment (Advanced)
+
+1. **Install Fly CLI**: `curl -L https://fly.io/install.sh | sh`
+2. **Login**: `fly auth login`
+3. **Launch**: `fly launch` (akan buat fly.toml)
+4. **Deploy**: `fly deploy`
 
 ### Manual Deployment
 
