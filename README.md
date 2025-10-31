@@ -246,28 +246,72 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 python main.py
 ```
 
-## Docker Support (Optional)
+## Docker Support
 
-Create a `Dockerfile`:
-```dockerfile
-FROM python:3.13-slim
+### 🚀 **Opsi 1: Menggunakan Docker Script (Recommended)**
+```bash
+# Deploy lengkap (build + run)
+./docker-deploy.sh deploy
 
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY . .
-
-EXPOSE 8000
-
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Atau command spesifik:
+./docker-deploy.sh build    # Build image
+./docker-deploy.sh run      # Run container
+./docker-deploy.sh logs     # Lihat logs
+./docker-deploy.sh status   # Cek status
+./docker-deploy.sh stop     # Stop container
+./docker-deploy.sh restart  # Restart container
 ```
 
-Build and run:
+### 🐳 **Opsi 2: Menggunakan Docker Compose**
 ```bash
-docker build -t saweria-gateway .
-docker run -p 8000:8000 saweria-gateway
+# Build dan run
+docker-compose up --build -d
+
+# Lihat logs
+docker-compose logs -f
+
+# Stop
+docker-compose down
+```
+
+### 🔧 **Opsi 3: Manual Docker Commands**
+```bash
+# Build image
+docker build -t saweria-payment-gateway .
+
+# Run container
+docker run -d \
+  --name saweria-gateway-app \
+  --restart unless-stopped \
+  -p 8000:8000 \
+  -e DEBUG=false \
+  saweria-payment-gateway
+
+# View logs
+docker logs saweria-gateway-app
+
+# Stop container
+docker stop saweria-gateway-app
+```
+
+### 📁 **File Docker yang Tersedia:**
+- `Dockerfile` - Docker image configuration
+- `docker-compose.yml` - Multi-container setup
+- `docker-deploy.sh` - Automated deployment script
+
+### 🔍 **Debugging Docker:**
+```bash
+# Check container status
+docker ps -f name=saweria-gateway-app
+
+# View real-time logs
+docker logs -f saweria-gateway-app
+
+# Enter container
+docker exec -it saweria-gateway-app bash
+
+# Check container health
+docker inspect saweria-gateway-app
 ```
 
 ## Security Considerations

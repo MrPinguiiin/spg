@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  saweria-gateway:
+    build: .
+    container_name: saweria-payment-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - HOST=0.0.0.0
+      - PORT=8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - saweria-network
+
+networks:
+  saweria-network:
+    driver: bridge
+
+volumes:
+  logs:
+    driver: local
