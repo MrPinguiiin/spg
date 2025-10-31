@@ -23,6 +23,8 @@ services:
       - ./traefik/dynamic:/dynamic:ro
     environment:
       - CF_API_EMAIL=${CF_API_EMAIL:-guensnulien@gmail.com}
+      - TRAEFIK_DASHBOARD_DOMAIN=${TRAEFIK_DASHBOARD_DOMAIN:-traefik.beanbill.online}
+      - TRAEFIK_AUTH_USERS=${TRAEFIK_AUTH_USERS}
     command:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
@@ -45,14 +47,27 @@ services:
       - "traefik.enable=true"
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
 
-      # Router untuk Dashboard Traefik (HTTP - tanpa SSL untuk simplifikasi)
+      # Middleware Basic Auth untuk Dashboard
+      - "traefik.http.middlewares.auth-traefik.basicauth.users=${TRAEFIK_AUTH_USERS}"
+      
+      # Middleware Redirect ke HTTPS (untuk Dashboard)
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+      # Router untuk Dashboard Traefik (HTTPS)
       - "traefik.http.routers.traefik-dashboard.rule=Host(`${TRAEFIK_DASHBOARD_DOMAIN}`)"
       - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
       - "traefik.http.routers.traefik-dashboard.tls=true"
       - "traefik.http.routers.traefik-dashboard.tls.certresolver=le"
-      - "traefik.http.routers.traefik-dashboard.middlewares=auth-traefik"
-      - "traefik.http.middlewares.auth-traefik.basicauth.users=${TRAEFIK_AUTH_USERS}"
+      - "traefik.http.routers.traefik-dashboard.tls.domains[0].main=${TRAEFIK_DASHBOARD_DOMAIN}"
+      - "traefik.http.routers.traefik-dashboard.middlewares=auth-traefik@docker"
+
+      # Router HTTP untuk redirect ke HTTPS (Dashboard)
+      - "traefik.http.routers.traefik-dashboard-http.rule=Host(`${TRAEFIK_DASHBOARD_DOMAIN}`) && !PathPrefix(`/.well-known/acme-challenge/`)"
+      - "traefik.http.routers.traefik-dashboard-http.entrypoints=web"
+      - "traefik.http.routers.traefik-dashboard-http.middlewares=redirect-to-https@docker"
+      - "traefik.http.routers.traefik-dashboard-http.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard-http.priority=-10"
 
   ###############################################
   # 2) saweria-gateway: Payment Gateway API      #
