@@ -22,10 +22,7 @@ services:
       - letsencrypt:/letsencrypt
       - ./traefik/dynamic:/dynamic:ro
     environment:
-      - CLOUDFLARE_DNS_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
-      # Jika pakai Global API Key:
-      # - CLOUDFLARE_EMAIL=${CF_API_EMAIL}
-      # - CLOUDFLARE_API_KEY=${CF_API_KEY}
+      - CF_API_EMAIL=${CF_API_EMAIL:-guensnulien@gmail.com}
     command:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
@@ -38,25 +35,21 @@ services:
       - --api.dashboard=true
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      # HTTP-01 Challenge (seperti certbot, menggunakan Let's Encrypt)
       - --certificatesresolvers.le.acme.email=${CF_API_EMAIL:-guensnulien@gmail.com}
       - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
-      - --certificatesresolvers.le.acme.dnschallenge=true
-      - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
-      - --certificatesresolvers.le.acme.dnschallenge.delaybeforecheck=30
-      # Resolver HTTP-01 untuk custom domain reseller
-      - --certificatesresolvers.lehttp.acme.email=${CF_API_EMAIL:-guensnulien@gmail.com}
-      - --certificatesresolvers.lehttp.acme.storage=/letsencrypt/acme.json
-      - --certificatesresolvers.lehttp.acme.httpchallenge=true
-      - --certificatesresolvers.lehttp.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.le.acme.httpchallenge=true
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
 
-      # Router untuk Dashboard Traefik
+      # Router untuk Dashboard Traefik (HTTP - tanpa SSL untuk simplifikasi)
       - "traefik.http.routers.traefik-dashboard.rule=Host(`${TRAEFIK_DASHBOARD_DOMAIN}`)"
       - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.tls=true"
       - "traefik.http.routers.traefik-dashboard.tls.certresolver=le"
       - "traefik.http.routers.traefik-dashboard.middlewares=auth-traefik"
       - "traefik.http.middlewares.auth-traefik.basicauth.users=${TRAEFIK_AUTH_USERS}"
@@ -113,14 +106,7 @@ services:
       - "traefik.http.routers.saweria-main.middlewares=main-chain@docker"
       - "traefik.http.routers.saweria-main.service=saweria-service"
 
-      # Router HTTP sementara untuk testing (tanpa redirect, jika SSL belum ready)
-      - "traefik.http.routers.saweria-http.rule=Host(`${DOMAIN}`) && !PathPrefix(`/.well-known/acme-challenge/`)"
-      - "traefik.http.routers.saweria-http.entrypoints=web"
-      - "traefik.http.routers.saweria-http.middlewares=main-chain@docker"
-      - "traefik.http.routers.saweria-http.service=saweria-service"
-      - "traefik.http.routers.saweria-http.priority=100"
-      
-      # Router HTTP untuk redirect ke HTTPS (prioritas lebih rendah, aktif jika SSL ready)
+      # Router HTTP untuk redirect ke HTTPS (hindari ganggu ACME HTTP-01 challenge)
       - "traefik.http.routers.http-redirect.rule=Host(`${DOMAIN}`) && !PathPrefix(`/.well-known/acme-challenge/`)"
       - "traefik.http.routers.http-redirect.entrypoints=web"
       - "traefik.http.routers.http-redirect.middlewares=redirect-to-https@docker"
