@@ -81,3 +81,8 @@ dist_temp/
 # PyArmor runtime (DI-COMMIT - diperlukan untuk run obfuscated code)
 # Jangan ignore pyarmor_runtime_000000 atau pyarmor_runtime/
 # File ini akan di-commit bersama obfuscated code
+
+# Development scripts (internal, tidak untuk user)
+obfuscate-and-commit.sh
+WORKFLOW-OBFUSCATE.md
+Dockerfile.obfuscated
