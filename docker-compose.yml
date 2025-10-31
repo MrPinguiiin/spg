@@ -21,10 +21,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt:/letsencrypt
       - ./traefik/dynamic:/dynamic:ro
+      - ./traefik/auth:/auth:ro
     environment:
       - CF_API_EMAIL=${CF_API_EMAIL:-guensnulien@gmail.com}
       - TRAEFIK_DASHBOARD_DOMAIN=${TRAEFIK_DASHBOARD_DOMAIN:-traefik.beanbill.online}
-      - TRAEFIK_AUTH_USERS=${TRAEFIK_AUTH_USERS}
     command:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
@@ -47,8 +47,8 @@ services:
       - "traefik.enable=true"
       - "traefik.http.services.traefik.loadbalancer.server.port=8080"
 
-      # Middleware Basic Auth untuk Dashboard
-      - "traefik.http.middlewares.auth-traefik.basicauth.users=${TRAEFIK_AUTH_USERS}"
+      # Middleware Basic Auth untuk Dashboard (menggunakan file-based config)
+      - "traefik.http.middlewares.auth-traefik.basicauth.usersfile=/auth/.htpasswd"
       
       # Middleware Redirect ke HTTPS (untuk Dashboard)
       - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
