@@ -70,6 +70,12 @@ The API can be configured through environment variables or the `config.py` file:
 | `REQUEST_DELAY` | `0.5` | Delay between requests in seconds |
 | `LOG_LEVEL` | `INFO` | Logging level |
 | `LOG_FILE` | `logs/payment_gateway.log` | Log file path |
+| `DOMAIN` | `api.localhost` | Domain untuk API (digunakan Traefik) |
+| `ALLOWED_ORIGINS` | `*` | CORS allowed origins (pisahkan dengan koma) |
+| `CF_API_EMAIL` | `admin@example.com` | Email untuk Let's Encrypt SSL |
+| `CLOUDFLARE_API_TOKEN` | - | Cloudflare API token untuk DNS challenge |
+| `TRAEFIK_DASHBOARD_DOMAIN` | `traefik.localhost` | Domain untuk Traefik dashboard |
+| `TRAEFIK_AUTH_USERS` | - | Basic auth users untuk Traefik dashboard |
 
 ## Running the API
 
@@ -262,17 +268,78 @@ python main.py
 ./docker-deploy.sh restart  # Restart container
 ```
 
-### 🐳 **Opsi 2: Menggunakan Docker Compose**
+### 🐳 **Opsi 2: Menggunakan Docker Compose dengan Traefik**
+Docker Compose sudah dikonfigurasi dengan Traefik untuk manajemen domain dan SSL otomatis.
+
+**Persiapan:**
+1. **Buat file `.env`** dari template:
+   ```bash
+   cp env.example .env
+   ```
+
+2. **Edit file `.env`** dan set variabel berikut:
+   ```bash
+   # Domain untuk API
+   DOMAIN=api.example.com
+   
+   # CORS Origins (pisahkan dengan koma)
+   ALLOWED_ORIGINS=https://example.com,https://www.example.com
+   
+   # Cloudflare untuk SSL otomatis (DNS Challenge)
+   CF_API_EMAIL=your-email@example.com
+   CLOUDFLARE_API_TOKEN=your-cloudflare-api-token
+   
+   # Traefik Dashboard
+   TRAEFIK_DASHBOARD_DOMAIN=traefik.example.com
+   TRAEFIK_AUTH_USERS=admin:$$apr1$$zOqj7pGf$$dHb1uVhXKcJKsWb7p3Vxx.
+   ```
+
+3. **Generate password untuk Traefik Dashboard**:
+   ```bash
+   # Install htpasswd (jika belum ada)
+   # Ubuntu/Debian: sudo apt install apache2-utils
+   # Arch: sudo pacman -S apache
+   
+   echo $(htpasswd -nb admin yourpassword) | sed 's/\$/\$\$/g'
+   # Copy output ke TRAEFIK_AUTH_USERS di .env
+   ```
+
+**Deploy dengan Traefik:**
 ```bash
-# Build dan run
+# Build dan run dengan Traefik
 docker-compose up --build -d
 
 # Lihat logs
 docker-compose logs -f
 
+# Lihat logs spesifik service
+docker-compose logs -f saweria-gateway
+docker-compose logs -f traefik
+
 # Stop
 docker-compose down
+
+# Stop dan hapus volumes (termasuk SSL certificates)
+docker-compose down -v
 ```
+
+**Fitur Traefik:**
+- ✅ **HTTPS Otomatis**: SSL certificate otomatis dari Let's Encrypt
+- ✅ **HTTP → HTTPS Redirect**: Otomatis redirect dari HTTP ke HTTPS
+- ✅ **Security Headers**: HSTS, X-Frame-Options, dll
+- ✅ **CORS Middleware**: Konfigurasi CORS headers
+- ✅ **Health Check**: Otomatis health checking untuk service
+- ✅ **Traefik Dashboard**: Dashboard monitoring di `TRAEFIK_DASHBOARD_DOMAIN`
+
+**DNS Setup:**
+1. Point domain `A` record ke IP server
+2. Point subdomain untuk Traefik Dashboard (jika digunakan) ke IP server
+3. Cloudflare DNS Challenge akan otomatis verify dan generate SSL
+
+**Catatan:**
+- Untuk development lokal, gunakan `api.localhost` dan `traefik.localhost` (tidak perlu SSL)
+- Untuk production, pastikan domain sudah pointing ke server sebelum deploy
+- Traefik akan otomatis generate SSL certificate setelah deploy jika Cloudflare token valid
 
 ### 🔧 **Opsi 3: Manual Docker Commands**
 ```bash

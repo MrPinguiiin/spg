@@ -1,11 +1,72 @@
 version: '3.8'
 
+volumes:
+  letsencrypt: {}
+  logs:
+    driver: local
+
 services:
+  ###############################################
+  # 1) traefik: HTTPS Proxy + Otomatisasi SSL   #
+  ###############################################
+  traefik:
+    image: traefik:v2.11
+    container_name: saweria-traefik
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - saweria-network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+      - ./traefik/dynamic:/dynamic:ro
+    environment:
+      - CLOUDFLARE_DNS_API_TOKEN=${CLOUDFLARE_API_TOKEN:-}
+      # Jika pakai Global API Key:
+      # - CLOUDFLARE_EMAIL=${CF_API_EMAIL}
+      # - CLOUDFLARE_API_KEY=${CF_API_KEY}
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=saweria-network
+      - --log.level=INFO
+      - --providers.file.directory=/dynamic
+      - --providers.file.watch=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --api.dashboard=true
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --certificatesresolvers.le.acme.email=${CF_API_EMAIL:-guensnulien@gmail.com}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.dnschallenge=true
+      - --certificatesresolvers.le.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.le.acme.dnschallenge.delaybeforecheck=30
+      # Resolver HTTP-01 untuk custom domain reseller
+      - --certificatesresolvers.lehttp.acme.email=${CF_API_EMAIL:-guensnulien@gmail.com}
+      - --certificatesresolvers.lehttp.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.lehttp.acme.httpchallenge=true
+      - --certificatesresolvers.lehttp.acme.httpchallenge.entrypoint=web
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+
+      # Router untuk Dashboard Traefik
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`${TRAEFIK_DASHBOARD_DOMAIN}`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=le"
+      - "traefik.http.routers.traefik-dashboard.middlewares=auth-traefik"
+      - "traefik.http.middlewares.auth-traefik.basicauth.users=${TRAEFIK_AUTH_USERS}"
+
+  ###############################################
+  # 2) saweria-gateway: Payment Gateway API      #
+  ###############################################
   saweria-gateway:
     build: .
     container_name: saweria-payment-gateway
-    ports:
-      - "8000:8000"
     environment:
       - DEBUG=false
       - LOG_LEVEL=INFO
@@ -22,11 +83,50 @@ services:
       - ./logs:/app/logs
     networks:
       - saweria-network
+    labels:
+      - "traefik.enable=true"
+
+      # Middleware Chains
+      - "traefik.http.middlewares.main-chain.chain.middlewares=cors-headers,security-headers"
+
+      # Middleware CORS
+      - "traefik.http.middlewares.cors-headers.headers.accesscontrolallowmethods=GET,OPTIONS,PUT,POST,DELETE,PATCH"
+      - "traefik.http.middlewares.cors-headers.headers.accesscontrolalloworiginlist=${ALLOWED_ORIGINS}"
+      - "traefik.http.middlewares.cors-headers.headers.accesscontrolallowcredentials=true"
+
+      # Middleware Security Headers
+      - "traefik.http.middlewares.security-headers.headers.stsseconds=31536000"
+      - "traefik.http.middlewares.security-headers.headers.stsincludesubdomains=true"
+      - "traefik.http.middlewares.security-headers.headers.stspreload=true"
+      - "traefik.http.middlewares.security-headers.headers.contenttypenosniff=true"
+      - "traefik.http.middlewares.security-headers.headers.framedeny=true"
+      - "traefik.http.middlewares.security-headers.headers.referrerpolicy=strict-origin-when-cross-origin"
+
+      # Middleware Redirect ke HTTPS (dipakai di router HTTP)
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+      # Router untuk domain utama (HTTPS)
+      - "traefik.http.routers.saweria-main.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.saweria-main.entrypoints=websecure"
+      - "traefik.http.routers.saweria-main.tls.certresolver=le"
+      - "traefik.http.routers.saweria-main.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.saweria-main.middlewares=main-chain@docker"
+      - "traefik.http.routers.saweria-main.service=saweria-service"
+
+      # Router HTTP umum untuk redirect ke HTTPS (hindari ganggu ACME HTTP-01)
+      - "traefik.http.routers.http-redirect.rule=Host(`${DOMAIN}`) && !PathPrefix(`/.well-known/acme-challenge/`)"
+      - "traefik.http.routers.http-redirect.entrypoints=web"
+      - "traefik.http.routers.http-redirect.middlewares=redirect-to-https@docker"
+      - "traefik.http.routers.http-redirect.service=saweria-service"
+      - "traefik.http.routers.http-redirect.priority=-10"
+
+      # Service App (port 8000 + healthcheck)
+      - "traefik.http.services.saweria-service.loadbalancer.server.port=8000"
+      - "traefik.http.services.saweria-service.loadbalancer.healthcheck.path=/"
+      - "traefik.http.services.saweria-service.loadbalancer.healthcheck.scheme=http"
+      - "traefik.http.services.saweria-service.loadbalancer.healthcheck.interval=15s"
+      - "traefik.http.services.saweria-service.loadbalancer.healthcheck.timeout=5s"
 
 networks:
   saweria-network:
     driver: bridge
-
-volumes:
-  logs:
-    driver: local

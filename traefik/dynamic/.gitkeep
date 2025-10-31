@@ -1,0 +1,4 @@
+# Directory untuk konfigurasi Traefik yang dinamis
+# File YAML konfigurasi tambahan dapat ditempatkan di sini
+# Traefik akan memantau direktori ini dan memuat ulang konfigurasi secara otomatis
+
