@@ -65,3 +65,19 @@ traefik/dynamic/*
 *.key
 *.crt
 letsencrypt/
+
+# Original source code (keep private, obfuscated version akan di-commit)
+src/
+original/
+*.py.original
+main.py.original
+config.py.original
+
+# PyArmor temporary files
+.pyarmor_cache/
+dist_temp/
+*.py.bak
+
+# PyArmor runtime (DI-COMMIT - diperlukan untuk run obfuscated code)
+# Jangan ignore pyarmor_runtime_000000 atau pyarmor_runtime/
+# File ini akan di-commit bersama obfuscated code
